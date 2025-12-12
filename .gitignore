@@ -1,0 +1,118 @@
+# =========================================
+# PYTHON
+# =========================================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+
+# Python packaging
+build/
+dist/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter notebooks
+.ipynb_checkpoints
+
+# =========================================
+# DJANGO
+# =========================================
+
+# Django secret and settings overrides
+*.env
+*.env.*
+.envrc
+.env.local
+settings_local.py
+local_settings.py
+
+# SQLite databases
+db.sqlite3
+db.sqlite3-journal
+
+# Django collectstatic
+staticfiles/
+static/
+media/
+
+# Django migration caches (keep migrations but ignore __pycache__)
+**/migrations/__pycache__/
+
+# Logs
+*.log
+
+# =========================================
+# PYCHARM / IDEA
+# =========================================
+.idea/
+*.iml
+out/
+
+# =========================================
+# OS Files
+# =========================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# =========================================
+# OTHER COMMON TOOLS
+# =========================================
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+
+# Pylint / Bandit
+.pylintrc
+.bandit
+
+# Sphinx
+docs/_build/
+
+# JetBrains IDE temp files
+.idea_modules/
+
+.env
