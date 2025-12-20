@@ -13,6 +13,7 @@ class Profile(models.Model):
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
+        related_name='profile',
         help_text="The user associated with this profile.",
     )
 
