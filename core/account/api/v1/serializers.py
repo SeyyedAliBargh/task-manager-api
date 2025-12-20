@@ -56,6 +56,3 @@ class RegisterUserSerializer(serializers.ModelSerializer):
         profile.save()
 
         return user
-
-def test():
-    pass
