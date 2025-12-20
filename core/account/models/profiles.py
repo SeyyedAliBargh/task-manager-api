@@ -13,39 +13,31 @@ class Profile(models.Model):
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
-        help_text="The user associated with this profile."
+        help_text="The user associated with this profile.",
     )
 
     # Personal information fields
     first_name = models.CharField(
-        _("first name"),
-        max_length=50,
-        help_text="The user's first name."
+        _("first name"), max_length=50, help_text="The user's first name."
     )
     last_name = models.CharField(
-        _("last name"),
-        max_length=50,
-        help_text="The user's last name."
+        _("last name"), max_length=50, help_text="The user's last name."
     )
     image = models.ImageField(
-        blank=True,
-        null=True,
-        help_text="Profile image of the user (optional)."
+        blank=True, null=True, help_text="Profile image of the user (optional)."
     )
     description = models.TextField(
         blank=True,
         null=True,
-        help_text="Additional information or bio of the user (optional)."
+        help_text="Additional information or bio of the user (optional).",
     )
 
     # Timestamp fields
     created_at = models.DateTimeField(
-        auto_now_add=True,
-        help_text="The date and time when the profile was created."
+        auto_now_add=True, help_text="The date and time when the profile was created."
     )
     updated_at = models.DateTimeField(
-        auto_now=True,
-        help_text="The date and time when the profile was last updated."
+        auto_now=True, help_text="The date and time when the profile was last updated."
     )
 
     def __str__(self):

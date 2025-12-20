@@ -1,7 +1,6 @@
 import uuid
 from django.db import models
 from django.urls import reverse
-
 from core.account.models import Profile
 
 
@@ -18,11 +17,7 @@ class Project(models.Model):
         CLOSED = ("closed", "Closed")
 
     # Use UUID as primary key for better security and scalability
-    id = models.UUIDField(
-        primary_key=True,
-        default=uuid.uuid4,
-        editable=False
-    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     # Basic project information
     name = models.CharField(max_length=100)
@@ -30,9 +25,7 @@ class Project(models.Model):
 
     # Project owner (creator). Deleting owner deletes the project.
     owner = models.ForeignKey(
-        Profile,
-        on_delete=models.CASCADE,
-        related_name='projects'
+        Profile, on_delete=models.CASCADE, related_name="projects"
     )
 
     # Timestamps
@@ -41,9 +34,7 @@ class Project(models.Model):
 
     # Project visibility status
     status = models.CharField(
-        max_length=20,
-        choices=Visibility.choices,
-        default=Visibility.PRIVATE
+        max_length=20, choices=Visibility.choices, default=Visibility.PRIVATE
     )
 
     def __str__(self):
@@ -51,16 +42,16 @@ class Project(models.Model):
 
     # Canonical URL for project detail endpoint
     def get_absolute_url(self):
-        return reverse('project-detail', kwargs={'pk': self.id})
+        return reverse("project-detail", kwargs={"pk": self.id})
 
     class Meta:
         # Default ordering for querysets
-        ordering = ('created', 'name')
+        ordering = ("created", "name")
 
         # Indexes for common query patterns
         indexing = [
-            models.Index(fields=['created', 'status']),
-            models.Index(fields=['name']),
+            models.Index(fields=["created", "status"]),
+            models.Index(fields=["name"]),
         ]
 
 
@@ -83,18 +74,10 @@ class Task(models.Model):
         HIGH = ("high", "High")
 
     # UUID primary key
-    id = models.UUIDField(
-        primary_key=True,
-        default=uuid.uuid4,
-        editable=False
-    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     # Parent project
-    project = models.ForeignKey(
-        Project,
-        on_delete=models.CASCADE,
-        related_name="tasks"
-    )
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="tasks")
 
     # Task content
     title = models.CharField(max_length=200)
@@ -102,30 +85,20 @@ class Task(models.Model):
 
     # Assigned user (optional)
     assignee = models.ForeignKey(
-        Profile,
-        on_delete=models.SET_NULL,
-        related_name="assigned_tasks",
-        null=True
+        Profile, on_delete=models.SET_NULL, related_name="assigned_tasks", null=True
     )
 
     # Task creator (optional, preserved even if user is deleted)
     created_by = models.ForeignKey(
-        Profile,
-        on_delete=models.SET_NULL,
-        related_name="created_tasks",
-        null=True
+        Profile, on_delete=models.SET_NULL, related_name="created_tasks", null=True
     )
 
     # Task state and importance
     status = models.CharField(
-        max_length=20,
-        choices=Status.choices,
-        default=Status.TODO
+        max_length=20, choices=Status.choices, default=Status.TODO
     )
     priority = models.CharField(
-        max_length=20,
-        choices=Priority.choices,
-        default=Priority.MEDIUM
+        max_length=20, choices=Priority.choices, default=Priority.MEDIUM
     )
 
     # Optional deadline
@@ -145,7 +118,7 @@ class Task(models.Model):
 
     # Canonical URL for task detail endpoint
     def get_absolute_url(self):
-        return reverse('task-detail', kwargs={'pk': self.id})
+        return reverse("task-detail", kwargs={"pk": self.id})
 
     class Meta:
         # Default ordering (upcoming tasks first)
@@ -161,8 +134,8 @@ class Task(models.Model):
         # Prevent invalid due dates (must be >= creation time)
         constraints = [
             models.CheckConstraint(
-                check=models.Q(due_date__gte=models.F('created')),
-                name="due_date_after_created"
+                check=models.Q(due_date__gte=models.F("created")),
+                name="due_date_after_created",
             )
         ]
 
@@ -184,24 +157,16 @@ class ProjectMember(models.Model):
 
     # Related project
     project = models.ForeignKey(
-        Project,
-        on_delete=models.CASCADE,
-        related_name="members"
+        Project, on_delete=models.CASCADE, related_name="members"
     )
 
     # User with access to the project
     user = models.ForeignKey(
-        Profile,
-        on_delete=models.CASCADE,
-        related_name="project_memberships"
+        Profile, on_delete=models.CASCADE, related_name="project_memberships"
     )
 
     # Access role inside the project
-    role = models.CharField(
-        max_length=20,
-        choices=Role.choices,
-        default=Role.MEMBER
-    )
+    role = models.CharField(max_length=20, choices=Role.choices, default=Role.MEMBER)
 
     # Membership creation timestamp
     joined_at = models.DateTimeField(auto_now_add=True)
@@ -236,37 +201,29 @@ class ProjectInvitation(models.Model):
 
     # Target project
     project = models.ForeignKey(
-        Project,
-        on_delete=models.CASCADE,
-        related_name="invitations"
+        Project, on_delete=models.CASCADE, related_name="invitations"
     )
 
     # User being invited (must exist in system)
     invitee = models.ForeignKey(
-        Profile,
-        on_delete=models.CASCADE,
-        related_name="project_invitations"
+        Profile, on_delete=models.CASCADE, related_name="project_invitations"
     )
 
     # Role that will be assigned upon acceptance
     role = models.CharField(
         max_length=20,
         choices=ProjectMember.Role.choices,
-        default=ProjectMember.Role.MEMBER
+        default=ProjectMember.Role.MEMBER,
     )
 
     # User who sent the invitation
     invited_by = models.ForeignKey(
-        Profile,
-        on_delete=models.CASCADE,
-        related_name="sent_invitations"
+        Profile, on_delete=models.CASCADE, related_name="sent_invitations"
     )
 
     # Invitation state
     status = models.CharField(
-        max_length=20,
-        choices=Status.choices,
-        default=Status.PENDING
+        max_length=20, choices=Status.choices, default=Status.PENDING
     )
 
     # Creation timestamp
