@@ -1,9 +1,12 @@
+from django.contrib.auth.password_validation import validate_password
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
+from django.core import exceptions
 from ...models.users import User
 from ...models.profiles import Profile
 
 
-class RegisterUserSerializer(serializers.ModelSerializer):
+class RegistrationSerializer(serializers.ModelSerializer):
     """
     Serializer for user registration.
     Handles creation of both User and associated Profile with first and last name.
@@ -26,9 +29,16 @@ class RegisterUserSerializer(serializers.ModelSerializer):
         Ensure that password and password2 match.
         Raise a validation error if they do not.
         """
-        if attrs['password'] != attrs['password2']:
-            raise serializers.ValidationError({"password": "Passwords must match."})
-        return attrs
+        if attrs.get("password") != attrs.get("password1"):
+            raise serializers.ValidationError({"detail": "passwords doesn't match"})
+
+        try:
+            validate_password(attrs.get("password"))
+
+        except exceptions.ValidationError as e:
+            raise serializers.ValidationError({"password": list(e.messages)})
+
+        return super().validate(attrs)
 
     def create(self, validated_data):
         """
@@ -56,3 +66,18 @@ class RegisterUserSerializer(serializers.ModelSerializer):
         profile.save()
 
         return user
+
+class ActivationResendSerializer(serializers.Serializer):
+    email = serializers.CharField(required=True)
+
+    def validate(self, attrs):
+        email = attrs.get("email")
+        try:
+            user = get_object_or_404(User, email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError({"detail": "user doesn't exist"})
+
+        if user.is_verified:
+            raise serializers.ValidationError({"detail": "user is Verified"})
+        attrs["user"] = user
+        return super().validate(attrs)
