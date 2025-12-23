@@ -1,7 +1,7 @@
 import uuid
 from django.db import models
 from django.urls import reverse
-from core.account.models import Profile
+from account.models.profiles import Profile
 
 
 # =========================
@@ -49,7 +49,7 @@ class Project(models.Model):
         ordering = ("created", "name")
 
         # Indexes for common query patterns
-        indexing = [
+        indexes = [
             models.Index(fields=["created", "status"]),
             models.Index(fields=["name"]),
         ]
