@@ -1,26 +1,24 @@
 import jwt
+from ...models import User
 from django.shortcuts import get_object_or_404
-from django.conf import settings
-from jwt import ExpiredSignatureError, InvalidTokenError
+from jwt import ExpiredSignatureError, InvalidSignatureError
 from rest_framework import status
-from rest_framework import generics
+from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import RegistrationSerializer, ActivationResendSerializer
-from ...models import User
+from .serializers import CustomTokenObtainPairSerializer, RegistrationSerializer, ActivationResendSerializer
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.conf import settings
-
-
-class RegistrationAPIView(generics.GenericAPIView):
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView
+class RegistrationAPIView(GenericAPIView):
     serializer_class = RegistrationSerializer
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
+            serializer.save()
             email = serializer.validated_data["email"]
             try:
                 serializer.save()
@@ -116,4 +114,5 @@ class ActivationResendAPIView(GenericAPIView):
         refresh = RefreshToken.for_user(user)
         return str(refresh.access_token)
 
-
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
