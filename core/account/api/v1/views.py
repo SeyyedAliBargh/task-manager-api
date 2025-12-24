@@ -1,17 +1,16 @@
 import jwt
 from django.shortcuts import get_object_or_404
-from djoser.conf import settings
 from jwt import ExpiredSignatureError, InvalidSignatureError
 from rest_framework import status
 from rest_framework import generics
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from .serializers import RegisterUserSerializer, CustomTokenObtainPairSerializer
+from .serializers import CustomTokenObtainPairSerializer, RegistrationSerializer
 
 
 
 class RegisterUserAPIView(GenericAPIView):
-    serializer_class = RegisterUserSerializer
+    serializer_class = RegistrationSerializer
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
