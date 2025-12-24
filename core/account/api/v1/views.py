@@ -1,15 +1,18 @@
 import jwt
+from ...models import User
 from django.shortcuts import get_object_or_404
 from jwt import ExpiredSignatureError, InvalidSignatureError
 from rest_framework import status
-from rest_framework import generics
+from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from .serializers import CustomTokenObtainPairSerializer, RegistrationSerializer
-
-
-
-class RegisterUserAPIView(GenericAPIView):
+from .serializers import CustomTokenObtainPairSerializer, RegistrationSerializer, ActivationResendSerializer
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.conf import settings
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView
+class RegistrationAPIView(GenericAPIView):
     serializer_class = RegistrationSerializer
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
