@@ -1,7 +1,7 @@
 import jwt
 from django.shortcuts import get_object_or_404
-from djoser.conf import settings
-from jwt import ExpiredSignatureError, InvalidSignatureError
+from django.conf import settings
+from jwt import ExpiredSignatureError, InvalidTokenError
 from rest_framework import status
 from rest_framework import generics
 from rest_framework.generics import GenericAPIView
@@ -21,37 +21,44 @@ class RegistrationAPIView(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
             email = serializer.validated_data["email"]
-            full_name = serializer.validated_data["first_name"] + " " + serializer.validated_data["last_name"]
-            # we change data because data itself returns hashed password too
-            data = {
-                "email": email,
-                "full_name": full_name,
-            }
-            user_obj = get_object_or_404(User, email=email)
-            token = self.get_token_for_user(user_obj)
-            # send email for user with token
-
-            html_content = render_to_string(
-                "account/registration_email.html",
-                {
-                    "token": token,
+            try:
+                serializer.save()
+                full_name = serializer.validated_data["first_name"] + " " + serializer.validated_data["last_name"]
+                # we change data because data itself returns hashed password too
+                data = {
+                    "email": email,
                     "full_name": full_name,
                 }
-            )
-            text_content = "This is a Registration Email"
+                user_obj = get_object_or_404(User, email=email)
+                token = self.get_token_for_user(user_obj)
+                # send email for user with token
 
-            email_obj = EmailMultiAlternatives(
-                "Activation Email",
-                text_content,
-                settings.DEFAULT_FROM_EMAIL,
-                [email],
-            )
-            email_obj.attach_alternative(html_content, "text/html")
-            email_obj.send()
+                html_content = render_to_string(
+                    "account/registration_email.html",
+                    {
+                        "token": token,
+                        "full_name": full_name,
+                    }
+                )
+                text_content = "This is a Registration Email"
 
-            return Response(data=data, status=status.HTTP_201_CREATED)
+                email_obj = EmailMultiAlternatives(
+                    "Activation Email",
+                    text_content,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [email],
+                )
+                email_obj.attach_alternative(html_content, "text/html")
+                email_obj.send()
+
+                return Response(data=data, status=status.HTTP_201_CREATED)
+            except:
+                User.objects.get(email=email).delete()
+                data = {
+                    "detail": "An error occurred, please try again later and call to admins",
+                }
+                return Response(data=data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def get_token_for_user(self, user):

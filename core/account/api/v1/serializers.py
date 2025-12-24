@@ -29,7 +29,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
         Ensure that password and password2 match.
         Raise a validation error if they do not.
         """
-        if attrs.get("password") != attrs.get("password1"):
+        if attrs.get("password") != attrs.get("password2"):
             raise serializers.ValidationError({"detail": "passwords doesn't match"})
 
         try:
