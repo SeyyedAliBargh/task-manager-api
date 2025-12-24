@@ -6,18 +6,12 @@ from rest_framework import status
 from rest_framework import generics
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import RegistrationSerializer, ActivationResendSerializer
-from ...models import User
-from django.core.mail import EmailMultiAlternatives
-from django.template.loader import render_to_string
-from django.conf import settings
+from .serializers import RegisterUserSerializer
 
 
-class RegistrationAPIView(generics.GenericAPIView):
-    serializer_class = RegistrationSerializer
 
+class RegisterUserAPIView(GenericAPIView):
+    serializer_class = RegisterUserSerializer
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
@@ -100,13 +94,4 @@ class ActivationResendAPIView(GenericAPIView):
                 status=status.HTTP_200_OK,
             )
         else:
-            return Response(
-                {"detail": "request failed"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-    def get_token_for_user(self, user):
-        refresh = RefreshToken.for_user(user)
-        return str(refresh.access_token)
-
-
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -4,7 +4,7 @@ from rest_framework import serializers
 from django.core import exceptions
 from ...models.users import User
 from ...models.profiles import Profile
-
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 class RegistrationSerializer(serializers.ModelSerializer):
     """
@@ -81,3 +81,9 @@ class ActivationResendSerializer(serializers.Serializer):
             raise serializers.ValidationError({"detail": "user is Verified"})
         attrs["user"] = user
         return super().validate(attrs)
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        validated_data = super().validate(attrs)
+        validated_data['user_email'] = self.user.email
+        validated_data['user_id'] = self.user.id
+        return validated_data

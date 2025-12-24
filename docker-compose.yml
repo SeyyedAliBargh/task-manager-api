@@ -1,4 +1,4 @@
-version: "3.9"
+#version: "3.9"
 
 services:
   web:
@@ -78,3 +78,4 @@ services:
 
 volumes:
   postgres_data:
+
