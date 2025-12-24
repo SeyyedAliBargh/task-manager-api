@@ -81,6 +81,9 @@ class ActivationResendSerializer(serializers.Serializer):
             raise serializers.ValidationError({"detail": "user is Verified"})
         attrs["user"] = user
         return super().validate(attrs)
+    
+
+    
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         validated_data = super().validate(attrs)
