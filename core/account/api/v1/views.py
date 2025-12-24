@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework import generics
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from .serializers import RegisterUserSerializer
+from .serializers import RegisterUserSerializer, CustomTokenObtainPairSerializer
 
 
 
@@ -95,3 +95,7 @@ class ActivationResendAPIView(GenericAPIView):
             )
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
