@@ -47,3 +47,6 @@ class Profile(models.Model):
         which is the email of the related user.
         """
         return self.user.email
+
+    def get_full_name(self):
+        return self.first_name + " " + self.last_name
