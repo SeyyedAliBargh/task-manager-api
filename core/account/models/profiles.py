@@ -13,7 +13,7 @@ class Profile(models.Model):
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
-        related_name='profile',
+        related_name="profile",
         help_text="The user associated with this profile.",
     )
 
@@ -47,3 +47,4 @@ class Profile(models.Model):
         which is the email of the related user.
         """
         return self.user.email
+

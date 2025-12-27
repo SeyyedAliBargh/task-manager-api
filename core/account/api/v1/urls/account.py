@@ -14,7 +14,6 @@ urlpatterns = [
         views.RegistrationAPIView.as_view(),
         name="registration",
     ),
-
     # verification
     path(
         "activation/confirm/<str:token>/",

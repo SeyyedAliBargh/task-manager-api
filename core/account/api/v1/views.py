@@ -6,23 +6,46 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from .serializers import CustomTokenObtainPairSerializer, RegistrationSerializer, ActivationResendSerializer
+from .serializers import (
+    CustomTokenObtainPairSerializer,
+    RegistrationSerializer,
+    ActivationResendSerializer,
+)
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
+
 class RegistrationAPIView(GenericAPIView):
+    """ 
+    API view for user registration.
+
+    This view handles user registration by validating the provided data,
+    creating a new user, sending an activation email with a token, and
+    returning the created user's basic information.
+
+    Methods
+    -------
+    post(request, *args, **kwargs):
+        Handles POST requests for user registration. Validates serializer data,
+        creates a user, sends activation email, and returns user info.
+    get_token_for_user(user):
+        Generates a JWT access token for the given user.
+    """
     serializer_class = RegistrationSerializer
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            email = serializer.validated_data["email"]
             try:
+                email = serializer.validated_data["email"]
                 serializer.save()
-                full_name = serializer.validated_data["first_name"] + " " + serializer.validated_data["last_name"]
+                full_name = (
+                    serializer.validated_data["first_name"]
+                    + " "
+                    + serializer.validated_data["last_name"]
+                )
                 # we change data because data itself returns hashed password too
                 data = {
                     "email": email,
@@ -37,7 +60,7 @@ class RegistrationAPIView(GenericAPIView):
                     {
                         "token": token,
                         "full_name": full_name,
-                    }
+                    },
                 )
                 text_content = "This is a Registration Email"
 
@@ -60,11 +83,37 @@ class RegistrationAPIView(GenericAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def get_token_for_user(self, user):
+        """
+        Generate a JWT access token for the given user.
+
+        Parameters
+        ----------
+        user : User
+            The user instance for which to generate the token.
+
+        Returns
+        -------
+        str
+            The generated JWT access token as a string.
+        """
         refresh = RefreshToken.for_user(user)
         return str(refresh.access_token)
 
 
 class ActivationAPIView(APIView):
+    """
+    API view for activating a user account.
+
+    This view verifies the provided JWT token, checks if the user is already
+    verified, and activates the user account if valid.
+
+    Methods
+    -------
+    get(request, token, *args, **kwargs):
+        Handles GET requests for user activation. Decodes the token, verifies
+        the user, and updates the user's verification status.
+    """
+
     def get(self, request, token, *args, **kwargs):
         try:
             token = jwt.decode(jwt=token, key=settings.SECRET_KEY, algorithms=["HS256"])
@@ -91,6 +140,20 @@ class ActivationAPIView(APIView):
 
 
 class ActivationResendAPIView(GenericAPIView):
+    """
+    API view for resending activation emails.
+
+    This view allows resending the activation email with a new token
+    for users who are not yet verified.
+
+    Methods
+    -------
+    post(request, *args, **kwargs):
+        Handles POST requests to resend activation email. Validates serializer,
+        generates token, and sends email.
+    get_token_for_user(user):
+        Generates a JWT access token for the given user.
+    """
     serializer_class = ActivationResendSerializer
 
     def post(self, request, *args, **kwargs):
@@ -111,8 +174,35 @@ class ActivationResendAPIView(GenericAPIView):
             )
 
     def get_token_for_user(self, user):
+        """
+        Generate a JWT access token for the given user.
+
+        Parameters
+        ----------
+        user : User
+            The user instance for which to generate the token.
+
+        Returns
+        -------
+        str
+            The generated JWT access token as a string.
+        """
         refresh = RefreshToken.for_user(user)
         return str(refresh.access_token)
 
+
 class CustomTokenObtainPairView(TokenObtainPairView):
+    """
+    Custom API view for obtaining JWT token pairs.
+
+    This view uses a custom serializer to generate access and refresh tokens
+    for authenticated users.
+
+    Attributes
+    ----------
+    serializer_class : CustomTokenObtainPairSerializer
+        The serializer used for token generation.
+    """
     serializer_class = CustomTokenObtainPairSerializer
+
+
