@@ -143,3 +143,13 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
 # -----------------------------------------
 # DRF settings
 # -----------------------------------------
+
+
+
+
+# -----------------------------------------
+# Celery settings
+# -----------------------------------------
+
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/1'

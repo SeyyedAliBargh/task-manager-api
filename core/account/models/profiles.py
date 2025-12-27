@@ -48,3 +48,5 @@ class Profile(models.Model):
         """
         return self.user.email
 
+    def get_full_name(self):
+        return self.first_name + " " + self.last_name
