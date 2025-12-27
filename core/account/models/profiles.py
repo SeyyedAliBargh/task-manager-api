@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from .users import User
-
+from ..utils import profile_image_path
 
 class Profile(models.Model):
     """
@@ -25,7 +25,7 @@ class Profile(models.Model):
         _("last name"), max_length=50, help_text="The user's last name."
     )
     image = models.ImageField(
-        blank=True, null=True, help_text="Profile image of the user (optional)."
+        blank=True, null=True, help_text="Profile image of the user (optional).", upload_to=profile_image_path
     )
     description = models.TextField(
         blank=True,
@@ -50,3 +50,4 @@ class Profile(models.Model):
 
     def get_full_name(self):
         return self.first_name + " " + self.last_name
+
