@@ -110,7 +110,7 @@ class ActivationResendSerializer(serializers.Serializer):
 
         # Fetch user or fail with 404-style error
         user = get_object_or_404(User, email=email)
-
+        full_name = user.profile.get_full_name()
         if user.is_verified:
             raise serializers.ValidationError(
                 {"detail": "user is Verified"}
@@ -118,6 +118,7 @@ class ActivationResendSerializer(serializers.Serializer):
 
         # Attach user instance for use in the view
         attrs["user"] = user
+        attrs["full_name"] = full_name
         return super().validate(attrs)
 
 

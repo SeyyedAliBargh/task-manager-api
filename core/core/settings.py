@@ -151,7 +151,27 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
 # -----------------------------------------
 # DRF settings
 # -----------------------------------------
+REST_FRAMEWORK = {
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.UserRateThrottle',  # Base throttle for authenticated users
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        # Registration: very sensitive, prevent spam
+        'registration': '3/minute',   # Max 3 requests per minute per user
 
+        # Activation: user may click multiple times, allow more
+        'activation': '10/minute',    # Max 10 requests per minute per user
+
+        # Login: protect against brute force attacks
+        'login': '5/minute',          # Max 5 requests per minute per user
+
+        # Change password: highly sensitive, keep strict
+        'change_password': '2/minute', # Max 2 requests per minute per user
+
+        # Profile: user may read/update frequently, allow higher rate
+        'profile': '20/minute',       # Max 20 requests per minute per user
+    }
+}
 
 
 

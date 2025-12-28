@@ -18,7 +18,7 @@ from jwt import ExpiredSignatureError, InvalidSignatureError
 from ...models import User
 from ...tasks import send_registration_email
 from .serializers import *
-
+from ...rate_limit import RegistrationRateThrottle, ActivationRateThrottle, LoginRateThrottle, ChangePasswordRateThrottle, ProfileRateThrottle
 
 class RegistrationAPIView(GenericAPIView):
     """
@@ -32,6 +32,7 @@ class RegistrationAPIView(GenericAPIView):
     """
 
     serializer_class = RegistrationSerializer
+    throttle_classes = [RegistrationRateThrottle]
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -90,6 +91,8 @@ class ActivationAPIView(APIView):
     Handles account activation via JWT token.
     """
 
+    throttle_classes = [ActivationRateThrottle]
+
     def get(self, request, token, *args, **kwargs):
         try:
             # Decode activation token using project SECRET_KEY
@@ -138,19 +141,25 @@ class ActivationResendAPIView(GenericAPIView):
     """
 
     serializer_class = ActivationResendSerializer
+    throttle_classes = [RegistrationRateThrottle]
+
 
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
 
         if serializer.is_valid(raise_exception=True):
             user = serializer.validated_data["user"]
-
+            email = serializer.validated_data["email"]
+            full_name = serializer.validated_data["full_name"]
             # Generate new activation token
             token = self.get_token_for_user(user)
 
-            # TODO: dispatch activation email (currently missing)
-            # send_registration_email.apply_async(...)
-
+            # Send activation email asynchronously
+            send_registration_email.apply_async(kwargs={
+                "token": token,
+                "full_name": full_name,
+                "email": email,
+            })
             return Response(
                 {"detail": "email sent successfully."},
                 status=status.HTTP_200_OK,
@@ -174,6 +183,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     JWT login endpoint with customized response payload.
     """
     serializer_class = CustomTokenObtainPairSerializer
+    throttle_classes = [LoginRateThrottle]
 
 
 class CustomDiscardAuthToken(APIView):
@@ -183,6 +193,8 @@ class CustomDiscardAuthToken(APIView):
     """
 
     permission_classes = [IsAuthenticated]
+    throttle_classes = [LoginRateThrottle]
+
 
     def post(self, request):
         request.user.auth_token.delete()
@@ -197,6 +209,7 @@ class ChangePasswordAPIView(generics.GenericAPIView):
     serializer_class = ChangePasswordSerializer
     model = User
     permission_classes = [IsAuthenticated]
+    throttle_classes = [ChangePasswordRateThrottle]
 
     def get_object(self):
         """
@@ -229,13 +242,11 @@ class ChangePasswordAPIView(generics.GenericAPIView):
 
 
 
-
-
-
 class ProfileRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
     serializer_class = ProfileSerializer
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
+    throttle_classes = [ProfileRateThrottle]
 
     def get_object(self):
         return self.request.user.profile
