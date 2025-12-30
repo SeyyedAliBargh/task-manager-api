@@ -7,6 +7,8 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView,
 )
 
+from ..views import ConfirmEmailChangeAPIView
+
 urlpatterns = [
 
     # -----------------------------
@@ -79,4 +81,18 @@ urlpatterns = [
         views.ChangePasswordAPIView.as_view(),
         name="change_password",
     ),
+    # -----------------------------
+    # Change Email
+    # -----------------------------
+    path(
+        "change-email/",
+        views.ChangeEmailAPIView.as_view(),
+        name="change_email",
+    ),
+    path(
+        "change-email/confirm/",
+        ConfirmEmailChangeAPIView.as_view(),
+        name="confirm-change-email"
+    ),
+
 ]

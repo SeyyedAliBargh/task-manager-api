@@ -156,6 +156,12 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.UserRateThrottle',  # Base throttle for authenticated users
     ],
     'DEFAULT_THROTTLE_RATES': {
+        # default rate for authenticated users
+        'user': '100/day',
+
+        # default rate for anonymous users
+        'anon': '20/day',
+
         # Registration: very sensitive, prevent spam
         'registration': '3/minute',   # Max 3 requests per minute per user
 

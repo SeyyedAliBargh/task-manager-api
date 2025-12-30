@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Account Activation</title>
+  <title>Email Change Verification</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body {
@@ -46,6 +46,17 @@
       font-size: 14px;
       color: #334155;
     }
+    .code-box {
+      margin: 16px 0;
+      padding: 14px;
+      background: #0f172a;
+      color: #f8fafc;
+      font-weight: bold;
+      font-size: 18px;
+      letter-spacing: 2px;
+      border-radius: 8px;
+      text-align: center;
+    }
     .btn-wrap {
       text-align: center;
       margin: 20px 0;
@@ -84,19 +95,13 @@
 <body>
   <div class="container">
     <div class="card">
-      <div class="header">Welcome to Our Platform</div>
+      <div class="header">Email Change Request</div>
       <div class="content">
-        <h1>Hello {{ full_name }}!</h1>
-        <p>Thank you for registering. To activate your account, please click the button below:</p>
-        <div class="btn-wrap">
-          <a class="btn" href="http://127.0.0.1:8000/account/api/v1/activation/confirm/{{ token }}" target="_blank" rel="noopener">Activate My Account</a>
-        </div>
-        <div class="fallback-link">
-          If the button doesn’t work, copy and paste this link into your browser:<br />
-          {{ activation_url }}
-        </div>
+        <h1>Verify Your New Email</h1>
+        <p>To complete the process of changing your email, please use the verification code below or click the confirmation button.</p>
+        <div class="code-box">{{ code }}</div>
         <p style="font-size:12px; color:#64748b; margin-top:16px;">
-          This activation link will expire soon. If you did not register, you can safely ignore this email.
+          This code will expire shortly. If you did not request this change, you can safely ignore this email.
         </p>
       </div>
       <div class="footer">
