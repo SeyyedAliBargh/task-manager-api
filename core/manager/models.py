@@ -37,6 +37,9 @@ class Project(models.Model):
         max_length=20, choices=Visibility.choices, default=Visibility.PRIVATE
     )
 
+    def min_description(self):
+        return self.description[0:6]
+
     def __str__(self):
         return f"{self.name} created by {self.owner.first_name}"
 

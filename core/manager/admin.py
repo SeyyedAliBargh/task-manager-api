@@ -5,3 +5,5 @@ admin.site.register(Project)
 
 
 admin.site.register(ProjectMember)
+
+admin.site.register(ProjectInvitation)

@@ -1,26 +1,21 @@
 import jwt
-
 from django.conf import settings
 from django.shortcuts import get_object_or_404
-
 from rest_framework import status, generics
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
-
 from jwt import ExpiredSignatureError, InvalidSignatureError
-
 from ...models import User
 from ...tasks import send_registration_email
 from .serializers import *
 
 
-class RegistrationAPIView(GenericAPIView):
+class RegistrationAPIView(GenericAPIView):  
     """
     Handles user registration.
 
