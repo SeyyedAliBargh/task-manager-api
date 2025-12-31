@@ -1,21 +1,28 @@
+import random
 import jwt
+
 from django.conf import settings
 from django.shortcuts import get_object_or_404
+
 from rest_framework import status, generics
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
+
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
+
 from jwt import ExpiredSignatureError, InvalidSignatureError
+
 from ...models import User
-from ...tasks import send_registration_email
+from ...tasks import send_registration_email, send_change_email
 from .serializers import *
+from ...rate_limit import RegistrationRateThrottle, ActivationRateThrottle, LoginRateThrottle, ChangePasswordRateThrottle, ProfileRateThrottle
+from ...models.users import EmailChangeRequestModel
 
-
-class RegistrationAPIView(GenericAPIView):  
+class RegistrationAPIView(GenericAPIView):
     """
     Handles user registration.
 
@@ -27,6 +34,8 @@ class RegistrationAPIView(GenericAPIView):
     """
 
     serializer_class = RegistrationSerializer
+    throttle_classes = [RegistrationRateThrottle]
+    permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -85,6 +94,8 @@ class ActivationAPIView(APIView):
     Handles account activation via JWT token.
     """
 
+    throttle_classes = [ActivationRateThrottle]
+    permission_classes = [AllowAny]
     def get(self, request, token, *args, **kwargs):
         try:
             # Decode activation token using project SECRET_KEY
@@ -133,19 +144,25 @@ class ActivationResendAPIView(GenericAPIView):
     """
 
     serializer_class = ActivationResendSerializer
+    throttle_classes = [RegistrationRateThrottle]
+    permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
 
         if serializer.is_valid(raise_exception=True):
             user = serializer.validated_data["user"]
-
+            email = serializer.validated_data["email"]
+            full_name = serializer.validated_data["full_name"]
             # Generate new activation token
             token = self.get_token_for_user(user)
 
-            # TODO: dispatch activation email (currently missing)
-            # send_registration_email.apply_async(...)
-
+            # Send activation email asynchronously
+            send_registration_email.apply_async(kwargs={
+                "token": token,
+                "full_name": full_name,
+                "email": email,
+            })
             return Response(
                 {"detail": "email sent successfully."},
                 status=status.HTTP_200_OK,
@@ -169,6 +186,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     JWT login endpoint with customized response payload.
     """
     serializer_class = CustomTokenObtainPairSerializer
+    throttle_classes = [LoginRateThrottle]
 
 
 class CustomDiscardAuthToken(APIView):
@@ -178,6 +196,8 @@ class CustomDiscardAuthToken(APIView):
     """
 
     permission_classes = [IsAuthenticated]
+    throttle_classes = [LoginRateThrottle]
+
 
     def post(self, request):
         request.user.auth_token.delete()
@@ -192,6 +212,7 @@ class ChangePasswordAPIView(generics.GenericAPIView):
     serializer_class = ChangePasswordSerializer
     model = User
     permission_classes = [IsAuthenticated]
+    throttle_classes = [ChangePasswordRateThrottle]
 
     def get_object(self):
         """
@@ -222,15 +243,87 @@ class ChangePasswordAPIView(generics.GenericAPIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class ChangeEmailAPIView(generics.GenericAPIView):
+    """
+    API endpoint to request an email change.
+
+    - Requires authentication.
+    - Validates the old and new email addresses.
+    - Generates a 6-digit verification code.
+    - Stores the request in the database.
+    - Sends the verification code to the new email asynchronously via Celery.
+    """
+    serializer_class = ChangeEmailSerializer
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, *args, **kwargs):
+        """
+        Handle PUT request to initiate email change.
+        """
+        serializer = self.serializer_class(data=request.data, context={"request": request})
+        if serializer.is_valid():
+            new_email = serializer.validated_data["new_email"]
+            code = str(random.randint(100000, 999999))
+
+            EmailChangeRequestModel.objects.create(user=request.user, new_email=new_email, code=code)
+
+            send_change_email.apply_async(kwargs={
+                "code": code,
+                "new_email": new_email,
+            })
+
+            return Response({"detail": "Email sent successfully."}, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class ConfirmEmailChangeAPIView(generics.GenericAPIView):
+    """
+    API endpoint to confirm an email change.
 
+    - Requires authentication.
+    - Validates the verification code.
+    - Marks the request as verified if valid and not expired.
+    - Updates the user's email address.
+    """
+    serializer_class = ConfirmEmailChangeSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        """
+        Handle POST request to confirm email change.
+        """
+        serializer = self.serializer_class(data=request.data, context={"request": request})
+        if serializer.is_valid():
+            req = serializer.validated_data["email_request"]
+
+            req.is_verified = True
+            req.save()
+
+            user = request.user
+            user.email = req.new_email
+            user.save()
+
+            return Response({"detail": "Email successfully changed."}, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ProfileRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
+    """
+    API endpoint to retrieve and update the authenticated user's profile.
+
+    - Requires authentication.
+    - Supports multipart/form-data for profile picture uploads.
+    - Applies custom rate limiting via ProfileRateThrottle.
+    """
     serializer_class = ProfileSerializer
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
+    throttle_classes = [ProfileRateThrottle]
 
     def get_object(self):
+        """
+        Return the profile object of the currently authenticated user.
+        """
         return self.request.user.profile

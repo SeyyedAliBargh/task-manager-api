@@ -88,3 +88,46 @@ class User(AbstractBaseUser, PermissionsMixin):
         Return the string representation of the user.
         """
         return self.email
+
+
+class EmailChangeRequestModel(models.Model):
+    """
+    Model to store pending email change requests.
+
+    Purpose:
+        - Keeps track of a user's request to change their email address.
+        - Stores the new email, verification code (OTP), and status.
+        - Used in a two-step verification process:
+            1. User requests email change → code is generated and sent.
+            2. User confirms code → email is updated if valid and not expired.
+
+    Fields:
+        user (ForeignKey): Reference to the user requesting the email change.
+        new_email (EmailField): The new email address to be verified.
+        code (CharField): 6-digit OTP code sent to the new email.
+        created_at (DateTimeField): Timestamp when the request was created.
+        is_verified (BooleanField): Flag indicating whether the request has been confirmed.
+    """
+
+    # Link to the user who requested the email change
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    # The new email address that needs to be verified
+    new_email = models.EmailField()
+
+    # One-time password (OTP) code for verification
+    code = models.CharField(max_length=6)
+
+    # Timestamp when the request was created (auto set)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # Whether the request has been verified successfully
+    is_verified = models.BooleanField(default=False)
+
+    def __str__(self):
+        """
+        String representation of the model.
+        Shows the user and the new email for easier debugging.
+        """
+        return f"{self.user.email} → {self.new_email} (verified: {self.is_verified})"
+
