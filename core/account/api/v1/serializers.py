@@ -9,7 +9,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from ...models.users import User, EmailChangeRequestModel
+from ...models.users import User, EmailChangeRequestModel, PasswordResetRequest
 from ...models.profiles import Profile
 
 
@@ -258,4 +258,55 @@ class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = ("first_name", "last_name", "email", "image", "description", "email")
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+    def validate(self, attrs):
+        email = attrs.get("email").lower()
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("No user found with this email!")
+        attrs["user"] = user
+        return attrs
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    code = serializers.CharField(required=True)
+
+    def validate(self, attrs):
+        request = self.context.get("request")
+        user = request.user
+        code = attrs.get("code")
+
+        try:
+            req = PasswordResetRequest.objects.filter(
+                user=user, code=code, is_verified=False
+            ).latest("created_at")
+        except PasswordResetRequest.DoesNotExist:
+            raise serializers.ValidationError("Invalid code!")
+
+        # check expiration (1 day)
+        if timezone.now() - req.created_at > timedelta(days=1):
+            raise serializers.ValidationError("This code has expired!")
+
+        attrs["reset_request"] = req
+        return attrs
+
+
+class PasswordResetCompleteSerializer(serializers.Serializer):
+    new_password = serializers.CharField(write_only=True, min_length=8)
+
+    def validate(self, attrs):
+        password = attrs.get("new_password")
+        try:
+            validate_password(password)
+            return attrs
+        except exceptions.ValidationError as e:
+            # Normalize Django validation errors to DRF format
+            raise serializers.ValidationError(
+                {"password": list(e.messages)}
+            )
 

@@ -131,3 +131,11 @@ class EmailChangeRequestModel(models.Model):
         """
         return f"{self.user.email} → {self.new_email} (verified: {self.is_verified})"
 
+class PasswordResetRequest(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    code = models.CharField(max_length=6)  # OTP code
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_verified = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.user.email} - verified: {self.is_verified}"

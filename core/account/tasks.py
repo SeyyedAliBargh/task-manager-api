@@ -90,6 +90,35 @@ def send_change_email(code, new_email):
 
 
 @shared_task
+def send_reset_password_email(code, email):
+
+    # Render HTML email content with verification code
+    html_content = render_to_string(
+        "account/send_reset_password_email.html",
+        {
+            "code": code,
+        }
+    )
+
+    # Fallback plain text content
+    text_content = "This is a Reset Password Request"
+
+    # Create email object with subject, sender, and recipient
+    email_obj = EmailMultiAlternatives(
+        "Reset Password Email",
+        text_content,
+        settings.DEFAULT_FROM_EMAIL,
+        [email],
+    )
+
+    # Attach HTML alternative
+    email_obj.attach_alternative(html_content, "text/html")
+
+    # Send the email
+    email_obj.send()
+
+
+@shared_task
 def delete_unverified_users():
     """
     Celery task to delete unverified users older than 1 day.

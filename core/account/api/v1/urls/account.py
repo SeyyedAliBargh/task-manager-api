@@ -7,7 +7,6 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView,
 )
 
-from ..views import ConfirmEmailChangeAPIView
 
 urlpatterns = [
 
@@ -91,8 +90,23 @@ urlpatterns = [
     ),
     path(
         "change-email/confirm/",
-        ConfirmEmailChangeAPIView.as_view(),
+        views.ConfirmEmailChangeAPIView.as_view(),
         name="confirm-change-email"
+    ),
+    # -----------------------------
+    # Reset Password (3 steps)
+    # -----------------------------
+    path("password-reset/request/",
+         views.PasswordResetRequestAPIView.as_view(),
+         name="password-reset-request"
+    ),
+    path("password-reset/confirm/",
+         views.PasswordResetConfirmAPIView.as_view(),
+         name="password-reset-confirm"
+    ),
+    path("password-reset/complete/",
+         views.PasswordResetCompleteAPIView.as_view(),
+         name="password-reset-complete"
     ),
 
 ]

@@ -17,10 +17,11 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from jwt import ExpiredSignatureError, InvalidSignatureError
 
 from ...models import User
-from ...tasks import send_registration_email, send_change_email
+from ...tasks import send_registration_email, send_change_email, send_reset_password_email
 from .serializers import *
 from ...rate_limit import RegistrationRateThrottle, ActivationRateThrottle, LoginRateThrottle, ChangePasswordRateThrottle, ProfileRateThrottle
-from ...models.users import EmailChangeRequestModel
+from ...models.users import EmailChangeRequestModel, PasswordResetRequest
+
 
 class RegistrationAPIView(GenericAPIView):
     """
@@ -327,3 +328,61 @@ class ProfileRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
         Return the profile object of the currently authenticated user.
         """
         return self.request.user.profile
+
+
+class PasswordResetRequestAPIView(generics.GenericAPIView):
+    serializer_class = PasswordResetRequestSerializer
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            user = serializer.validated_data["user"]
+            code = str(random.randint(100000, 999999))
+            PasswordResetRequest.objects.create(user=user, code=code)
+
+            # send email asynchronously
+            send_reset_password_email.apply_async(kwargs={
+                "code": code,
+                "email": user.email,
+            })
+
+            return Response({"detail": "Password reset email sent."}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# Step 2: Confirm code
+class PasswordResetConfirmAPIView(generics.GenericAPIView):
+    serializer_class = PasswordResetConfirmSerializer
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={"request": request})
+        if serializer.is_valid():
+            req = serializer.validated_data["reset_request"]
+            req.is_verified = True
+            req.save()
+            return Response({"detail": "Code verified successfully."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# Step 3: Complete password reset
+class PasswordResetCompleteAPIView(generics.GenericAPIView):
+    serializer_class = PasswordResetCompleteSerializer
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            new_password = serializer.validated_data["new_password"]
+
+            user = request.user
+            # Use Django's built-in method to set password safely
+            user.set_password(new_password)
+            user.save()
+
+            return Response({"detail": "Password changed successfully."}, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
