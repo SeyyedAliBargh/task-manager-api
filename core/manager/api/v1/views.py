@@ -285,5 +285,46 @@ class AcceptInvitationAPIView(generics.GenericAPIView):
                 {"detail": "An error occurred while processing the invitation"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
 class RejectInvitationAPIView(generics.GenericAPIView):
-    pass
+    permission_classes = [IsAuthenticated]
+    def get(self, request, token, *args, **kwargs):
+        try:
+            pyload = jwt.decode(
+                jwt=token,
+                key=settings.SECRET_KEY,
+                algorithms=["HS256"],
+            )
+            user_id = pyload["user_id"]
+            project_id = pyload["project_id"]
+            role = pyload["role"]
+            invitation_id = pyload["invitation_id"]
+        except ExpiredSignatureError:
+            # Token expired
+            return Response(
+                {"detail": "Token Expired"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except InvalidSignatureError:
+            # Token invalid
+            return Response(
+                {"detail": "Invalid Token"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            invitation = ProjectInvitation.objects.get(pk=invitation_id)
+            invitation.status = ProjectInvitation.Status.REVOKED
+            return Response({
+                "detail": "Invitation revoked successfully",
+            })
+
+        except ProjectInvitation.DoesNotExist:
+            return Response({"detail": "Invitation not found or already processed"},)
+
+        except Exception as e:
+            print(f"Error rejecting invitation: {str(e)}")
+            return Response(
+                {"detail": "An error occurred while processing the invitation"},
+            )
