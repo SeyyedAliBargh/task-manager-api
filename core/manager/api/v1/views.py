@@ -1,6 +1,7 @@
 from rest_framework import generics, status
-from manager.api.v1.serializer import ProjectsSerializer, CreateProjectSerializer, ProjectInvitationSerializer
-from ...models import Project, ProjectMember, ProjectInvitation
+from manager.api.v1.serializer import ProjectsSerializer, CreateProjectSerializer, ProjectInvitationSerializer, \
+    TaskSerializer
+from ...models import Project, ProjectMember, ProjectInvitation, Task
 from account.models import Profile
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -296,9 +297,7 @@ class RejectInvitationAPIView(generics.GenericAPIView):
                 key=settings.SECRET_KEY,
                 algorithms=["HS256"],
             )
-            user_id = pyload["user_id"]
-            project_id = pyload["project_id"]
-            role = pyload["role"]
+
             invitation_id = pyload["invitation_id"]
         except ExpiredSignatureError:
             # Token expired
@@ -316,6 +315,7 @@ class RejectInvitationAPIView(generics.GenericAPIView):
         try:
             invitation = ProjectInvitation.objects.get(pk=invitation_id)
             invitation.status = ProjectInvitation.Status.REVOKED
+            invitation.save()
             return Response({
                 "detail": "Invitation revoked successfully",
             })
@@ -328,3 +328,14 @@ class RejectInvitationAPIView(generics.GenericAPIView):
             return Response(
                 {"detail": "An error occurred while processing the invitation"},
             )
+
+
+class CreateTaskAPIView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated, IsOwnerOrAdminMember]
+    queryset = Task.objects.all()
+    serializer_class = TaskSerializer
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        task = serializer.save()
+        return Response({"detail": "Task created successfully"}, status=status.HTTP_201_CREATED,)

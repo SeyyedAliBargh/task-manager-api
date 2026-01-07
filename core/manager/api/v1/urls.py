@@ -12,4 +12,5 @@ urlpatterns = [
     path('projects/my/<str:pk>/invite/', views.ProjectInvitationAPIView.as_view(), name = 'invition_user'),
     path('invition/accept/confirm/<str:token>/', views.AcceptInvitationAPIView.as_view(), name='invition_user'),
     path('invition/reject/confirm/<str:token>/', views.RejectInvitationAPIView.as_view(), name='invition_user'),
+    path('projects/my/<str:pk>/create-task/', views.CreateTaskAPIView.as_view(), name='create_task'),
 ]

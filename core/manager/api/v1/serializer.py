@@ -2,7 +2,7 @@ from rest_framework import serializers
 from manager.models import Project, ProjectMember, Task, ProjectInvitation
 from account.models import Profile
 from django.shortcuts import get_object_or_404
-
+from django.utils import timezone
 
 class TaskSerializer(serializers.ModelSerializer):
     """
@@ -11,14 +11,55 @@ class TaskSerializer(serializers.ModelSerializer):
     - Provides serialization for task-related fields.
     - Includes metadata such as creation and update timestamps.
     """
-
+    email = serializers.EmailField(write_only=True)
     class Meta:
         model = Task
-        fields = [
-            'id', 'title', 'description', 'assignee',
-            'created_by', 'status', 'priority',
-            'due_date', 'created', 'updated'
-        ]
+        fields = ['project' ,'title', 'description', 'email', 'due_date', 'priority','status', 'created_by', 'created', 'updated']
+        read_only_fields = ['status', 'created_by', 'created', 'updated', 'project']
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        if not ProjectMember.objects.filter(profile__user__email=email).exists():
+            raise serializers.ValidationError('This user is not a member of the project.')
+        if not Profile.objects.filter(user__email=email).exists():
+            raise serializers.ValidationError('This user does not exist')
+        # بررسی زمان due_date
+        due_date = attrs.get('due_date')
+        # اگر آبجکت جدید باشه، created هنوز ساخته نشده → از زمان فعلی استفاده کن
+        created_time = getattr(self.instance, 'created', timezone.now())
+
+        if due_date and due_date < created_time:
+            raise serializers.ValidationError({
+                'due_date': 'زمان پایان نمی‌تواند قبل از زمان ایجاد باشد.'
+            })
+
+        return attrs
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        validated_data['created_by'] = request.user
+        profile = Profile.objects.get(email=validated_data['email'])
+        project_id = request.parser_context["kwargs"]["pk"]
+        project = get_object_or_404(Project, pk=project_id)
+        # عضو پروژه را پیدا کن
+        project_member = ProjectMember.objects.get(
+            project=project,
+            user=profile
+        )
+
+        task = Task.objects.create(
+            title= validated_data['title'],
+            description= validated_data['description'],
+            assignee=project_member,
+            project=project,
+            due_date=validated_data['due_date'],
+            created_by=validated_data['created_by'],
+            status=Task.Status.TODO,
+            priority=validated_data['priority'],
+        )
+
+        return task
+
 
 
 class ProjectsSerializer(serializers.ModelSerializer):
@@ -229,3 +270,5 @@ class ProjectInvitationSerializer(serializers.ModelSerializer):
             invited_by=request.user.profile
         )
         return invitation
+
+

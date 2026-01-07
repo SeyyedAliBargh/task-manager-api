@@ -58,6 +58,11 @@ class Project(models.Model):
         ]
 
 
+
+
+
+
+
 # =========================
 # Task Model
 # =========================
@@ -88,7 +93,7 @@ class Task(models.Model):
 
     # Assigned user (optional)
     assignee = models.ForeignKey(
-        Profile, on_delete=models.SET_NULL, related_name="assigned_tasks", null=True
+        'ProjectMember', on_delete=models.SET_NULL, related_name="assigned_tasks", null=True
     )
 
     # Task creator (optional, preserved even if user is deleted)
