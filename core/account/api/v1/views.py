@@ -200,9 +200,20 @@ class CustomDiscardAuthToken(APIView):
     throttle_classes = [LoginRateThrottle]
 
 
+    # def post(self, request):
+    #     request.user.auth_token.delete()
+    #     return Response(status=status.HTTP_204_NO_CONTENT)
+    
+
     def post(self, request):
-        request.user.auth_token.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        try:
+            refresh_token = request.data["refresh"]
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response({"detail": "user logged out"}, status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            return Response({"detail": "an error happened"}, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 class ChangePasswordAPIView(generics.GenericAPIView):
