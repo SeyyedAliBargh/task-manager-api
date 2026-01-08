@@ -11,7 +11,7 @@ app.autodiscover_tasks()
 # Schedules for tasks
 app.conf.beat_schedule = {
     'delete-unverified-users-daily': {
-        'task': 'accounts.tasks.delete_unverified_users',
+        'task': 'account.tasks.delete_unverified_users',
         'schedule': crontab(hour=0, minute=0),  # every night at 00:00
     },
 }
