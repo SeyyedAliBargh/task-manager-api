@@ -190,6 +190,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:8080",
     "http://127.0.0.1:9000",
     "http://web:8000",
+    "http://37.32.24.70",
+    "http://boldymarket.ir",
 ]
 
 # -----------------------------------------
